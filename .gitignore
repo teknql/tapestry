@@ -6,3 +6,4 @@ tmp/
 .nrepl-port
 pom.xml
 target/
+.clj-kondo/.cache/

@@ -1,0 +1,1 @@
+{:lint-as {tapestry.core/fiber-loop clojure.core/loop}}

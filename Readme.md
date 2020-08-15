@@ -184,7 +184,13 @@ Here is a demo of some of the basics.
 ```
 
 
+## CLJ Kondo Config
 
+Add the following to your `.clj-kondo/config.edn`
+
+```clojure
+{:lint-as {tapestry.core/fiber-loop        clojure.core/loop}}
+```
 
 ## Long Term Wish List
 
