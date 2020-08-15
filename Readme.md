@@ -1,7 +1,6 @@
 # Tapestry
 
 [![Clojars Project](https://img.shields.io/clojars/v/teknql/tapestry.svg)](https://clojars.org/teknql/tapestry)
-[![cljdoc badge](https://cljdoc.org/badge/teknql/tapestry)](https://cljdoc.org/d/teknql/tapestry/CURRENT)
 
 Next generation concurrency primitives for Clojure built on top of Project Loom
 
@@ -46,7 +45,10 @@ sudo ln -s java-16-openjdk-loom-preview $PWD/default-runtime
 
 ## Showcase
 
-Full API documentation can be seen in Clojuredoc. Here is a demo of some of the basics.
+Full API documentation can be seen in the `tapestry.core` ns itself. Right now we can't build
+the documentation using clj-doc. You can track the issue [here](https://github.com/cljdoc/cljdoc/issues/275)
+
+Here is a demo of some of the basics.
 
 #### Spawning a Fiber
 
