@@ -10,8 +10,37 @@ Next generation concurrency primitives for Clojure built on top of Project Loom
 [Project Loom](https://wiki.openjdk.java.net/display/loom/Main) is bringing first-class fibers
 to the JVM! Tapestry seeks to bring ergonomic clojure APIs for working with Loom.
 
-State: Early alpha. This was extracted out of a project that has been using it for about six months.
-Things are shaping up nicely, but there may be substantial API changes in the future.
+### What are Fibers and Why do I care?
+
+Fibers behave similarly to OS level threads, but are much lighter weight to spawn, allowing
+potentially millions of them to exist.
+
+Clojure already has the wonderful [core.async](https://github.com/clojure/core.async)
+and [manifold](https://github.com/aleph-io/manifold) libraries but writing maximally performant code
+in either requires the abstraction (channels, or promises) to leak all over your code
+(as you return channels or promise chains) to avoid blocking. Furthermore you frequently have to
+think about which executor will handle the blocking code.
+
+Loom moves handling parking to the JVM runtime level making it possible for "blocking" code to be
+executed in a highly parallel fashion without the developer having to explicitly opt into the
+behavior. This is similar to how Golang and Haskell achieve their highly performant parallelism.
+
+Some great further reading on the topic:
+
+  - [What color is your function](https://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/) - A mental exploration of
+  the leaking of the abstraction.
+  - [Async Rust Book Async Intro](https://rust-lang.github.io/async-book/01_getting_started/02_why_async.html) - A
+  good explaination of why we want async. The rest of this book is fantastic in terms of
+  understanding how async execution works under the hood. In `manifold` and `core.async`
+  the JVM executor is mostly analogous to the rust's concept of the Executor. In a language like
+  Rust, without a runtime, being explicit and "colorizing functions" makes sense, but with a
+  run-time we can do better.
+  - [Project Loom Wiki](https://wiki.openjdk.java.net/display/loom/Main#Main-Continuations) - Internal design notes of Loom.
+
+### Project State
+
+Tapestry is in early alpha. It was extracted out of a project that has been using it for about six
+months. Things are shaping up nicely, but there may be substantial API changes in the future.
 Right now manifold is used for streams and deferred representations, but I suspect that we may be
 able to remove it entirely and instead use JVM completable futures and queues. Streams may just be
 lazy sequences that are processed by dedicated fibers.
@@ -54,6 +83,7 @@ Here is a demo of some of the basics.
 
 ```clojure
 (require [tapestry.core :refer [fiber]])
+
 ;; Spawning a Fiber behaves very similarly to `future` in standard clojure, but
 ;; runs in a Loom Fiber and returns a manifold deferred.
 @(fiber (+ 1 2 3 4))
@@ -67,12 +97,13 @@ Here is a demo of some of the basics.
      (* 2 i)
      (do (Thread/sleep 100)
          (recur (inc i)))))
-;; => 10, afte aprox 500ms of sleeping
+;; => 10, after aprox 500ms of sleeping
 ```
 
 #### Processing Sequences
 ```clojure
 (require [tapestry.core :refer [parallely asyncly]])
+
 (def urls
   ["https://google.com"
    "https://bing.com"
@@ -94,10 +125,8 @@ Here is a demo of some of the basics.
 ```clojure
 ;; We can control max parallelism for fibers
 (require [tapestry.core :refer [parallely]])
-(with-max-parallelism 10
-  (parallely clj-http/get urls))
 
-;; Note that you can also use `with-max-parallism` within a fiber body
+;; Note that you can also use `with-max-parallelism` within a fiber body
 ;; which will limit parallelism of all newly spawned fibers. Consider the following
 ;; in which we process up to 5 orders simultaneously, and each order can process up to 2
 ;; tasks in parallel.
@@ -112,7 +141,18 @@ Here is a demo of some of the basics.
        :has-receipt @receipt-success?})))
 (with-max-parallelism 5
   (parallely process-order! orders))
+
+
+;; You can also bound the parallelism of sequence processing functions by specifying
+;; an optional bound:
+
+(asyncly 3 clj-http/get urls)
+
+(parallely 3 clj-http/get urls)
 ```
+
+
+
 
 ## Long Term Wish List
 
