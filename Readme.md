@@ -128,7 +128,7 @@ Here is a demo of some of the basics.
 
 ;; Note that you can also use `with-max-parallelism` within a fiber body
 ;; which will limit parallelism of all newly spawned fibers. Consider the following
-;; in which we process up to 5 orders simultaneously, and each order can process up to 2
+;; in which we process up to 3 orders simultaneously, and each order can process up to 2
 ;; tasks in parallel.
 (defn process-order!
   [order]
@@ -139,8 +139,15 @@ Here is a demo of some of the basics.
       {:is-notified @internal-notification-success?
        :is-shipped  @shipping-success?
        :has-receipt @receipt-success?})))
-(with-max-parallelism 5
-  (parallely process-order! orders))
+(with-max-parallelism 3
+  (let [order-a-summary (process-order! order-a)
+        order-b-summary (process-order! order-b)
+        order-c-summary (process-order! order-c)
+        order-d-summary (process-order! order-d)]
+    {:a @order-a-summary
+     :b @order-b-summary
+     :c @order-c-summary
+     :d @order-d-summary})
 
 
 ;; You can also bound the parallelism of sequence processing functions by specifying
@@ -149,6 +156,31 @@ Here is a demo of some of the basics.
 (asyncly 3 clj-http/get urls)
 
 (parallely 3 clj-http/get urls)
+```
+
+
+#### Manifold Support
+
+```clojure
+(require [manifold.stream :as s]
+         [tick.api.alpha :as t]
+         [tapestry.core :refer [periodically parallely asyncly]])
+
+;; tapestry.core/periodically behaves very similar to manfold's built in periodically,
+;; but runs each task in a fiber. You can terminate it by closing the stream.
+(let [count     (atom 0)
+        generator (periodically (t/new-duration 1 :seconds) #(swap! count inc))]
+    (->> generator
+         (s/consume #(println "Count is now:" %)))
+    (Thread/sleep 5000)
+    (s/close! generator))
+
+;; Also, `parallely` and `asyncly` both suppport manifold streams, allowing you to describe parallel
+;; execution pipelines
+(->> (s/stream)
+     (paralelly 5 some-operation)
+     (asyncly 5 some-other-operation)
+     (s/consume #(println "Got Result" %)))
 ```
 
 
