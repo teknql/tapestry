@@ -1,0 +1,3 @@
+{:paths ["src"]
+ :deps
+ {manifold {:mvn/version "0.1.9-alpha3"}}}
