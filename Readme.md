@@ -1,5 +1,8 @@
 # Tapestry
 
+[![Clojars Project](https://img.shields.io/clojars/v/teknql/tapestry.svg)](https://clojars.org/teknql/tapestry)
+[![cljdoc badge](https://cljdoc.org/badge/teknql/tapestry)](https://cljdoc.org/d/teknql/tapestry/CURRENT)
+
 Next generation concurrency primitives for Clojure built on top of Project Loom
 
 
@@ -14,6 +17,32 @@ Right now manifold is used for streams and deferred representations, but I suspe
 able to remove it entirely and instead use JVM completable futures and queues. Streams may just be
 lazy sequences that are processed by dedicated fibers.
 
+
+## Installation
+
+Add to your deps.edn:
+
+```
+teknql/tapestry {:mvn/version "0.0.1-SNAPSHOT"}
+```
+
+
+### Installing Loom
+
+You will need to be running a loom preview build for this to work.
+
+You can download the latest version from the [Loom Site](https://jdk.java.net/loom/).
+
+On linux, installing it looks something like this:
+
+```
+tar -xvzf openjdk-16-loom+4-56_linux-x64_bin.tar.gz
+sudo mv jdk-16/ /usr/lib/jvm/java-16-openjdk-loom-preview
+cd /usr/lib/jvm
+sudo rm default default-runtime
+sudo ln -s java-16-openjdk-loom-preview $PWD/default
+sudo ln -s java-16-openjdk-loom-preview $PWD/default-runtime
+```
 
 ## Showcase
 
