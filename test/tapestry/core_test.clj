@@ -57,6 +57,12 @@
                  (sut/asyncly inc)
                  (s/stream->seq)
                  (sort)))))
+
+  (testing "seq mode"
+    (is (= [2 3 4]
+           (->> [1 2 3]
+                (sut/asyncly inc)
+                sort))))
   (testing "bounded concurrency"
     (let [state        (atom {:running 0 :max-seen 0})
           update-state (fn [{:keys [running max-seen]}]

@@ -128,6 +128,10 @@
   Optionally takes a number `n` which will be the maximum parallelism."
   ([f s]
    (let [result (s/stream)
+         seq?   (seqable? s)
+         s      (if seq?
+                  (s/->source s)
+                  s)
          phaser (Phaser.)]
      (s/consume
        #(fiber
@@ -146,9 +150,15 @@
                                        (.awaitAdvance phaser 0))
                                      (s/close! result)))))
      (s/on-closed result #(s/close! s))
-     result))
+     (if seq?
+       (s/stream->seq result)
+       result)))
   ([n f s]
    (let [result      (s/stream)
+         seq?        (seqable? s)
+         s           (if seq?
+                       (s/->source s)
+                       s)
          work-buffer (s/stream n)
          phaser      (Phaser. n)]
      (s/connect s work-buffer)
@@ -166,7 +176,9 @@
                    (recur))))))
        (s/on-drained work-buffer #(fiber (.awaitAdvance phaser 0)
                                          (s/close! result))))
-     result)))
+     (if seq?
+       (s/stream->seq result)
+       result))))
 
 (defn parallelly
   "Maps `f` over the stream or seq `s` with up to `n` items occuring in parallel"
