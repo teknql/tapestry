@@ -181,12 +181,19 @@
        result))))
 
 (defn parallelly
-  "Maps `f` over the stream or seq `s` with up to `n` items occuring in parallel"
-  [n f s]
-  (let [seq? (seqable? s)]
-    (cond->> s
-      seq? (s/->source)
-      true (s/map #(fiber (f %)))
-      true (s/buffer n)
-      true (s/realize-each)
-      seq? (s/stream->seq))))
+  "Maps `f` over the stream or seq `s` with up to `n` items occuring in parallel.
+
+  If `n` is not specified, will use unbounded parallelism (or the max parallism set via the
+  `with-max-parallelism` macro)."
+  ([f s]
+   (->> s
+        (mapv #(fiber (f %)))
+        (map deref)))
+  ([n f s]
+   (let [seq? (seqable? s)]
+     (cond->> s
+       seq? (s/->source)
+       true (s/map #(fiber (f %)))
+       true (s/buffer n)
+       true (s/realize-each)
+       seq? (s/stream->seq)))))

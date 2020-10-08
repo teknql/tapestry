@@ -96,4 +96,8 @@
 
   (testing "seq mode"
     (is (= [2 3 4 5 6]
-           (sut/parallelly 2 inc [1 2 3 4 5])))))
+           (sut/parallelly 2 inc [1 2 3 4 5]))))
+
+  (testing "unbounded parallelism"
+    (is (= [2 3 4 5]
+           (sut/parallelly inc [1 2 3 4])))))
