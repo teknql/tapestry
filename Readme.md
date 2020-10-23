@@ -1,5 +1,6 @@
 # Tapestry
 
+[![Build Status](https://img.shields.io/github/workflow/status/teknql/tapestry/CI.svg)](https://github.com/teknql/tapestry/actions)
 [![Clojars Project](https://img.shields.io/clojars/v/teknql/tapestry.svg)](https://clojars.org/teknql/tapestry)
 
 Next generation concurrency primitives for Clojure built on top of Project Loom

@@ -5,5 +5,12 @@
   :target      :jar
   :group-id    teknql
   :artifact-id tapestry}
+ :aliases
+ {:test
+  {:extra-paths ["test"]
+   :main-opts   ["-m" "kaocha.runner"]
+   :extra-deps
+   {org.clojure/test.check {:mvn/version "0.10.0"}
+    lambdaisland/kaocha    {:mvn/version "0.0-541"}}}}
  :deps
- {manifold {:mvn/version "0.1.9-alpha3"}}}
+ {manifold/manifold {:mvn/version "0.1.9-alpha3"}}}
