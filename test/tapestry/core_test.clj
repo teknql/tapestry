@@ -80,10 +80,11 @@
       (is (<= (:max-seen @state) 3)))))
 
 (deftest periodically-test
-  (let [s (sut/periodically 1 2 (constantly true))]
+  (let [s (sut/periodically 3 5 (constantly true))]
     (is (nil? @(s/try-take! s 0))) ;; nothing available immediately
-    (is @(s/try-take! s 3)) ;; wait 3 millis for initial timeout duration
-    (is @(s/try-take! s 2)) ;; wait 2 millis for poll duration
+    (is @(s/try-take! s 10)) ;; Wait a bit
+    (is (nil? @(s/try-take! s 0))) ;; Nothing should be available immediately
+    (is @(s/try-take! s 5)) ;; wait 5 millis for poll duration
     (s/close! s)))
 
 
