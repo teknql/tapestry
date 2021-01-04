@@ -1,7 +1,8 @@
 (ns tapestry.core
   "Core namespace of Tapestry"
   (:import [java.util.concurrent Executors ExecutorService AbstractExecutorService Semaphore
-            Phaser])
+            Phaser]
+           [java.time Duration Instant])
   (:require [manifold.stream :as s]
             [manifold.deferred :as d])
   (:refer-clojure :exclude [locking]))
@@ -39,6 +40,11 @@
   [executor n]
   (let [running (Semaphore. n)]
     (proxy [AbstractExecutorService ExecutorService] []
+      (isShutdown [] (.isShutdown executor))
+      (isTerminated [] (.isTerminated executor))
+      (shutdown [] (.shutdown executor))
+      (shutdownNow [] (.shutdownNow executor))
+      (awaitTermination [] (.awaitTermination executor))
       (execute [runnable]
         (.acquire running)
         (.execute
@@ -47,6 +53,18 @@
             (run [_] (try (.run runnable)
                           (finally
                             (.release running))))))))))
+
+(defn deadline-executor
+  "Wraps the provided `executor` in an executor that will timeout after the provided
+  `duration-or-millis`.
+
+  Note that duration is a time from calling `deadline-executor`not from when subsequent fibers are
+  spanwed."
+  [executor duration-or-millis]
+  (let [duration (if (int? duration-or-millis)
+                   (Duration/ofMillis duration-or-millis)
+                   duration-or-millis)]
+    (.withDeadline executor (.plus (Instant/now) duration))))
 
 (defmacro with-root-executor
   "Rebinds the executor to the root executor, bypassing the `*local-executor*` if
@@ -91,6 +109,15 @@
   [n & body]
   `(binding [*local-executor* (max-parallelism-executor *root-executor* ~n)]
      ~@body))
+
+
+(defmacro with-deadline
+  "Executed the provided body with an executor that will time out newly spawned fibers after
+  `duration`."
+  [duration & body]
+  `(binding [*local-executor* (deadline-executor (or *local-executor* *root-executor*) ~duration)]
+     ~@body))
+
 
 (defmacro fiber-loop
   "Execute a body inside a loop."
@@ -230,3 +257,15 @@
        true (s/buffer n)
        true (s/realize-each)
        seq? (s/stream->seq)))))
+
+(comment
+  @(with-max-parallelism 5
+     (with-deadline (java.time.Duration/ofMillis 100)
+       (fiber
+         (Thread/sleep 1000)
+         true)))
+
+
+  (deadline-executor (max-parallelism-executor *root-executor* 5) (java.time.Duration/ofMillis 1000))
+  (.isShutdown *root-executor*)
+  )
