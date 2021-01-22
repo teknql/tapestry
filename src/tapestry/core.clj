@@ -109,6 +109,20 @@
            (s/close! result#))))
      result#))
 
+(defmacro pfor
+  "Macro which behaves identically to `clojure.core.for` but runs the body in parallell using
+  fibers.
+
+  Note that bindings in `:let` and `:when` will not be evaluated in parallel.
+
+  Will force evaluation of the sequence (ie. this is no longer lazy)."
+  [seq-exprs body-expr]
+  `(->> (for ~seq-exprs
+          (fiber
+            ~body-expr))
+        (doall)
+        (map deref)))
+
 (defn periodically
   "Behaves similarly to `manifold.stream/periodically` but relies on a loom
   fiber for time keeping. If no initial delay is specified runs immediately.

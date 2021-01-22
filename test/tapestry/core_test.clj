@@ -122,3 +122,8 @@
       (sut/locking resource
         (is (true? @resource)))
       (is (empty? @sut/locks)))))
+
+(deftest pfor-test
+  (testing "works"
+    (is (= '(1 2 3)
+           (sut/pfor [x (range 3)] (inc x))))))
