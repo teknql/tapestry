@@ -103,7 +103,7 @@ Here is a demo of some of the basics.
 
 #### Processing Sequences
 ```clojure
-(require [tapestry.core :refer [parallely asyncly]])
+(require [tapestry.core :refer [parallely asyncly pfor]])
 
 (def urls
   ["https://google.com"
@@ -113,6 +113,11 @@ Here is a demo of some of the basics.
 ;; We can also run a function over a sequence, spawning a fiber for each item.
 (->> urls
      (parallelly clj-http/get))
+
+;; We can using the built in `pfor` macro to evaluate a `for` expression in parallel. Note that unlike
+;; clojure.core/for, this is not lazy.
+(pfor [url urls]
+  (clj-http/get url))
 
 ;; Similalry, if we don't care about the order of items being maintained, and instead just want
 ;; to return results as quickly as possible
@@ -198,7 +203,8 @@ to starvation under enough contention. To help with this, tapestry provides its 
 Add the following to your `.clj-kondo/config.edn`
 
 ```clojure
-{:lint-as {tapestry.core/fiber-loop        clojure.core/loop}}
+{:lint-as {tapestry.core/fiber-loop clojure.core/loop
+           tapestry.core/pfor       clojure.core/for}}
 ```
 
 ## Long Term Wish List
