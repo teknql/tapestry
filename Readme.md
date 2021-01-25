@@ -83,7 +83,7 @@ Here is a demo of some of the basics.
 #### Spawning a Fiber
 
 ```clojure
-(require '[tapestry.core :refer [fiber]])
+(require '[tapestry.core :refer [fiber fiber-loop]])
 
 ;; Spawning a Fiber behaves very similarly to `future` in standard clojure, but
 ;; runs in a Loom Fiber and returns a manifold deferred.
