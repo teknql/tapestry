@@ -103,7 +103,7 @@ Here is a demo of some of the basics.
 
 #### Processing Sequences
 ```clojure
-(require [tapestry.core :refer [parallely asyncly pfor]])
+(require [tapestry.core :refer [parallelly asyncly pfor]])
 
 (def urls
   ["https://google.com"
@@ -130,7 +130,7 @@ Here is a demo of some of the basics.
 
 ```clojure
 ;; We can control max parallelism for fibers
-(require [tapestry.core :refer [parallely]])
+(require [tapestry.core :refer [parallelly]])
 
 ;; Note that you can also use `with-max-parallelism` within a fiber body
 ;; which will limit parallelism of all newly spawned fibers. Consider the following
@@ -161,7 +161,7 @@ Here is a demo of some of the basics.
 
 (asyncly 3 clj-http/get urls)
 
-(parallely 3 clj-http/get urls)
+(parallelly 3 clj-http/get urls)
 ```
 
 
@@ -170,7 +170,7 @@ Here is a demo of some of the basics.
 ```clojure
 (require [manifold.stream :as s]
          [tick.api.alpha :as t]
-         [tapestry.core :refer [periodically parallely asyncly]])
+         [tapestry.core :refer [periodically parallelly asyncly]])
 
 ;; tapestry.core/periodically behaves very similar to manfold's built in periodically,
 ;; but runs each task in a fiber. You can terminate it by closing the stream.
@@ -181,7 +181,7 @@ Here is a demo of some of the basics.
     (Thread/sleep 5000)
     (s/close! generator))
 
-;; Also, `parallely` and `asyncly` both suppport manifold streams, allowing you to describe parallel
+;; Also, `parallelly` and `asyncly` both suppport manifold streams, allowing you to describe parallel
 ;; execution pipelines
 (->> (s/stream)
      (paralelly 5 some-operation)
