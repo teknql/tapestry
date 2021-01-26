@@ -83,7 +83,7 @@ Here is a demo of some of the basics.
 #### Spawning a Fiber
 
 ```clojure
-(require [tapestry.core :refer [fiber]])
+(require '[tapestry.core :refer [fiber fiber-loop]])
 
 ;; Spawning a Fiber behaves very similarly to `future` in standard clojure, but
 ;; runs in a Loom Fiber and returns a manifold deferred.
@@ -103,7 +103,8 @@ Here is a demo of some of the basics.
 
 #### Processing Sequences
 ```clojure
-(require [tapestry.core :refer [parallelly asyncly pfor]])
+(require '[tapestry.core :refer [parallelly asyncly pfor]]
+         '[clj-http.client :as clj-http])
 
 (def urls
   ["https://google.com"
@@ -130,7 +131,7 @@ Here is a demo of some of the basics.
 
 ```clojure
 ;; We can control max parallelism for fibers
-(require [tapestry.core :refer [parallelly]])
+(require '[tapestry.core :refer [parallelly fiber]])
 
 ;; Note that you can also use `with-max-parallelism` within a fiber body
 ;; which will limit parallelism of all newly spawned fibers. Consider the following
@@ -168,9 +169,9 @@ Here is a demo of some of the basics.
 #### Manifold Support
 
 ```clojure
-(require [manifold.stream :as s]
-         [tick.api.alpha :as t]
-         [tapestry.core :refer [periodically parallelly asyncly]])
+(require '[manifold.stream :as s]
+         '[tick.alpha.api :as t]
+         '[tapestry.core :refer [periodically parallelly asyncly]])
 
 ;; tapestry.core/periodically behaves very similar to manfold's built in periodically,
 ;; but runs each task in a fiber. You can terminate it by closing the stream.
