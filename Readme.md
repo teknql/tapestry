@@ -73,6 +73,21 @@ sudo ln -s java-16-openjdk-loom-preview $PWD/default
 sudo ln -s java-16-openjdk-loom-preview $PWD/default-runtime
 ```
 
+Alternatively, you can install a loom preview build via [sdkman](https://sdkman.io/install):
+
+```
+$ sdkman install java 17.ea.2.lm-open
+    ...
+Installing: java 17.ea.2.lm-open
+Done installing!
+
+Do you want java 17.ea.2.lm-open to be set as default? (Y/n): n
+$ sdk use java 17.ea.2.lm-open
+
+Using java version 17.ea.2.lm-open in this shell.
+```
+The sdkman maintainers update the preview build often. To find the most up to date version id run `sdk list java` and look for the java identifier containing "lm-open".
+
 ## Showcase
 
 Full API documentation can be seen in the `tapestry.core` ns itself. Right now we can't build
