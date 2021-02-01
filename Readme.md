@@ -76,7 +76,7 @@ sudo ln -s java-16-openjdk-loom-preview $PWD/default-runtime
 Alternatively, you can install a loom preview build via [sdkman](https://sdkman.io/install):
 
 ```
-$ sdkman install java 17.ea.2.lm-open
+$ sdk install java 17.ea.2.lm-open
     ...
 Installing: java 17.ea.2.lm-open
 Done installing!
@@ -86,7 +86,7 @@ $ sdk use java 17.ea.2.lm-open
 
 Using java version 17.ea.2.lm-open in this shell.
 ```
-The sdkman maintainers update the preview build often. To find the most up to date version id run `sdk list java` and look for the java identifier containing "lm-open".
+The sdkman maintainers update the loom preview build often. To find the current version identifier for the loom preview build run `sdk list java` and look for the identifier containing "lm-open".
 
 ## Showcase
 
