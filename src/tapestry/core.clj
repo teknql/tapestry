@@ -10,7 +10,7 @@
 (def ^{:dynamic true
        :no-doc  true} *root-executor*
   "Static executor for loom"
-  (Executors/newVirtualThreadExecutor))
+  (Executors/newVirtualThreadPerTaskExecutor))
 
 (def ^{:dynamic true
        :no-doc  true} *local-executor*
