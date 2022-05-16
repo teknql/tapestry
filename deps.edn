@@ -8,6 +8,7 @@
  :aliases
  {:test
   {:extra-paths ["test"]
+   :jvm-opts    ["--enable-preview"]
    :main-opts   ["-m" "kaocha.runner"]
    :extra-deps
    {org.clojure/test.check {:mvn/version "0.10.0"}

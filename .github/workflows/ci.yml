@@ -28,7 +28,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-build-${{ env.cache-name }}-
       - name: Run Tests
-        uses: docker://teknql/openjdk-loom:16
+        uses: docker://teknql/openjdk:19-clojure
         with:
           entrypoint: /usr/local/bin/clojure
           args: -M:test
