@@ -219,9 +219,12 @@
   If `n` is not specified, will use unbounded parallelism (or the max parallism set via the
   `with-max-parallelism` macro)."
   ([f s]
-   (->> s
-        (mapv #(fiber (f %)))
-        (map deref)))
+   (let [stream? (s/stream? s)]
+     (cond->> s
+       stream? s/stream->seq
+       true (mapv #(fiber (f %)))
+       true (map deref)
+       stream? s/->source)))
   ([n f s]
    (let [seq? (seqable? s)]
      (cond->> s

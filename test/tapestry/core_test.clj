@@ -95,11 +95,17 @@
     (is (= [2 3 4 5 6 7]
            (->> (s/->source [1 2 3 4 5 6])
                 (sut/parallelly 2 inc)
+                (s/stream->seq))))
+    (is (= [2 3 4]
+           (->> (s/->source [1 2 3])
+                (sut/parallelly inc)
                 (s/stream->seq)))))
 
   (testing "seq mode"
     (is (= [2 3 4 5 6]
-           (sut/parallelly 2 inc [1 2 3 4 5]))))
+           (sut/parallelly 2 inc [1 2 3 4 5])))
+    (is (= [2 3 4]
+           (sut/parallelly inc [1 2 3]))))
 
   (testing "unbounded parallelism"
     (is (= [2 3 4 5]
