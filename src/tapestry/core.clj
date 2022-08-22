@@ -68,23 +68,6 @@
                                 (clojure.lang.Var/resetThreadBindingFrame frame#)
                                 ~@body))))))
 
-(def ^{:no-doc true} locks
-  "A lock atom to provide locking similar to Clojure's `clojure.core/locking` macro."
-  (atom {}))
-
-(defmacro locking
-  "An alternative to `clojure.core/locking` that doesn't use monitors."
-  [obj & body]
-  `(let [obj#  ~obj
-         sema# ^Semaphore  (get (swap! locks update obj# (fnil identity (Semaphore. 1))) obj#)]
-     (try
-       (.acquire sema#)
-       ~@body
-       (finally
-         (when-not (.hasQueuedThreads sema#)
-           (swap! locks dissoc obj#))
-         (.release sema#)))))
-
 (defmacro with-max-parallelism
   "Executes the provided body with an executor that ensures that at most `n` fibers
   will run in parallel."

@@ -112,22 +112,17 @@
            (sut/parallelly inc [1 2 3 4])))))
 
 (deftest locking-test
-  (testing "cleanup"
-    (sut/locking 5 true)
-    (is (empty? @sut/locks)))
-
   (testing "locking works"
     (let [resource (atom false)
           locked   (d/deferred)]
       (sut/fiber
-        (sut/locking resource
+        (locking resource
           (d/success! locked true)
           (Thread/sleep 10)
           (reset! resource true)))
       @locked
-      (sut/locking resource
-        (is (true? @resource)))
-      (is (empty? @sut/locks)))))
+      (locking resource
+        (is (true? @resource))))))
 
 (deftest pfor-test
   (testing "works"
