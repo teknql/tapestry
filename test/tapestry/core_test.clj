@@ -2,7 +2,9 @@
   (:require [tapestry.core :as sut]
             [clojure.test :refer [deftest testing is]]
             [manifold.stream :as s]
-            [manifold.deferred :as d]))
+            [manifold.deferred :as d])
+  (:import [java.util.concurrent TimeoutException]
+           [java.lang InterruptedException]))
 
 (deftest with-max-parallelism-test
   (testing "with-max-parallism limits parallel execution"
@@ -24,7 +26,7 @@
 
       (is (= 100 (:count @state)))
       (is (zero? (:running @state)))
-      (is (<= 10 (:max-seen @state) 100))))
+      (is (<= (:max-seen @state) 10))))
 
   (testing "with-max-parallelism can be nested"
     (let [state        (atom {:running 0 :max-seen 0 :count 0})
@@ -128,3 +130,47 @@
   (testing "works"
     (is (= '(1 2 3)
            (sut/pfor [x (range 3)] (inc x))))))
+
+(deftest interrupt-test
+  (let [f (sut/fiber (Thread/sleep 10000))]
+    (sut/interrupt! f)
+    (is (thrown? InterruptedException @f)))
+  (let [f (sut/fiber (try
+                       (Thread/sleep 10000)
+                       (catch InterruptedException _
+                         :handled)))]
+    (sut/interrupt! f)
+    (is (= :handled @f))))
+
+(deftest alive?-test
+  (let [f (sut/fiber (Thread/sleep 100))]
+    (is (sut/alive? f))
+    (sut/interrupt! f)
+    (Thread/sleep 10) ;; Let the interrupt happen
+    (is (not (sut/alive? f)))))
+
+(deftest timeout!-test
+  (testing "simple timeout"
+    (let [f (sut/fiber (Thread/sleep 1000))]
+      (sut/timeout! f 10)
+      (is (thrown? TimeoutException @f))
+      (Thread/sleep 10) ;; Let the interrupt be thrown
+      (is (not (sut/alive? f)))))
+  (testing "binding-based timeout"
+    (let [f (sut/with-timeout 10
+              (sut/fiber (Thread/sleep 1000)))]
+      (is (thrown? TimeoutException @f))))
+
+  (testing "binding and explicit defaults to explicit"
+    (let [f (sut/with-timeout 100
+              (sut/fiber (Thread/sleep 10000)))]
+      (is (= :explicit
+             @(sut/timeout! f 10 :explicit)))))
+
+  (testing "default value"
+    (let [f (sut/timeout! (sut/fiber (Thread/sleep 100))
+                          10
+                          :default)]
+      (is (= :default @f))
+      (Thread/sleep 10)
+      (is (not (sut/alive? f))))))

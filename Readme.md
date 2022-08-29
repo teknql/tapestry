@@ -116,6 +116,43 @@ Here is a demo of some of the basics.
 ;; => 10, after aprox 500ms of sleeping
 ```
 
+#### Interrupting and introspecting a Fiber
+```clojure
+(require '[tapestry.core :refer [fiber interrupt! alive?]]')
+
+(let [f (fiber (Thread/sleep 10000))]
+  (alive? f) ;; true
+  (interrupt! f)
+  (alive? f) ;; false
+  @f ;; Raises java.lang.InterruptedException))
+```
+
+#### Timeouts
+
+Tapestry supports setting timeouts on fibers which will cause them to be
+interrupted (with a `java.lang.InterruptedException`) when the timeout is hit.
+
+```clojure
+(require '[tapestry.core :refer [fiber timeout! alive? with-timeout]]')
+
+(let [f (fiber (Thread/sleep 10000))]
+  (timeout! f 100)
+  (alive? f) ;; true
+  (Thread/sleep 200)
+  (alive? f) ;; false
+  @f ;; Raises java.util.concurrent.TimeoutException))
+```
+
+You can also specify a default value
+
+```clojure
+(require '[tapestry.core :refer [fiber timeout! alive? with-timeout]]')
+
+(let [f (fiber (Thread/sleep 10000))]
+  (timeout! f 100 :default)
+  @f ;; => :default))
+```
+
 #### Processing Sequences
 ```clojure
 (require '[tapestry.core :refer [parallelly asyncly pfor]]
