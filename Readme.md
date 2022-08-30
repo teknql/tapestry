@@ -56,21 +56,33 @@ teknql/tapestry {:mvn/version "0.3.0-SNAPSHOT"}
 ```
 
 
-### Installing Loom
+### Installing JDK 19
 
-You will need to be running a loom preview build for this to work.
+You will need to be running a recent JDK 19 release
 
-You can download the latest version from the [Loom Site](https://jdk.java.net/loom/).
+You can download the latest version from the [JDK 19 Site](https://jdk.java.net/19/).
 
 On linux, installing it looks something like this:
 
 ```
-tar -xvzf openjdk-16-loom+4-56_linux-x64_bin.tar.gz
-sudo mv jdk-16/ /usr/lib/jvm/java-16-openjdk-loom-preview
+tar -xvzf openjdk-19_linux-x64_bin.tar.gz
+sudo mv jdk-19/ /usr/lib/jvm/jdk-19
 cd /usr/lib/jvm
 sudo rm default default-runtime
-sudo ln -s java-16-openjdk-loom-preview $PWD/default
-sudo ln -s java-16-openjdk-loom-preview $PWD/default-runtime
+sudo ln -s jdk-19 $PWD/default
+sudo ln -s jdk-19 $PWD/default-runtime
+```
+
+Then you will need to add the `--enable-preview` flag to your JVM opts. In deps.edn it looks like:
+
+```
+{:aliases
+ {:preview
+  {:jvm-opts ["--enable-preview"]}}}
+```
+
+```
+clojure -A:preview
 ```
 
 Alternatively, you can install a loom preview build via [sdkman](https://sdkman.io/install):
