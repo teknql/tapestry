@@ -52,7 +52,7 @@ lazy sequences that are processed by dedicated fibers.
 Add to your deps.edn:
 
 ```
-teknql/tapestry {:mvn/version "0.0.1-SNAPSHOT"}
+teknql/tapestry {:mvn/version "0.3.0-SNAPSHOT"}
 ```
 
 
@@ -133,7 +133,7 @@ Tapestry supports setting timeouts on fibers which will cause them to be
 interrupted (with a `java.lang.InterruptedException`) when the timeout is hit.
 
 ```clojure
-(require '[tapestry.core :refer [fiber timeout! alive? with-timeout]]')
+(require '[tapestry.core :refer [fiber timeout! alive?]]')
 
 (let [f (fiber (Thread/sleep 10000))]
   (timeout! f 100)
@@ -146,11 +146,24 @@ interrupted (with a `java.lang.InterruptedException`) when the timeout is hit.
 You can also specify a default value
 
 ```clojure
-(require '[tapestry.core :refer [fiber timeout! alive? with-timeout]]')
+(require '[tapestry.core :refer [fiber timeout! alive?]]')
 
 (let [f (fiber (Thread/sleep 10000))]
   (timeout! f 100 :default)
   @f ;; => :default))
+```
+
+
+You can use dynamic bindings to set a timeout on a bunch of fibers. Note that
+each fiber will have a timeout that starts from when the fiber was spawned.
+
+```clojure
+(require '[tapestry.core :refer [fiber alive? with-timeout]]')
+
+(with-timeout 100 ;; Accepts a duration or number of millis
+  (let [f (fiber (Thread/sleep 10000))]
+    @f ;; raises java.util.concurrent.TimeoutException
+    ))
 ```
 
 #### Processing Sequences
@@ -263,6 +276,10 @@ Add the following to your `.clj-kondo/config.edn`
 ## Long Term Wish List
 
 - [ ] Consider whether we can drop manifold. What do streams look like?
+- [ ] Implement structured concurrency using either java built-in APIs
+      (currently gated) or see if clojure affords us a nicer API.
+- [ ] Consider implement linking ala erlang
+- [ ] Consider implementing an OTP-like interface
 - [ ] Consider cljs support
 - [ ] `(parallelize ...)` macro to automatically re-write call graphs
 
