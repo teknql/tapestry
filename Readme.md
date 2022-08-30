@@ -113,7 +113,7 @@ Here is a demo of some of the basics.
 (require '[tapestry.core :refer [fiber fiber-loop]])
 
 ;; Spawning a Fiber behaves very similarly to `future` in standard clojure, but
-;; runs in a Loom Fiber and returns a manifold deferred.
+;; runs in a Loom Fiber and returns a tapestry.core.Fiber which implements IDeref.
 @(fiber (+ 1 2 3 4))
 ;; => 10
 
