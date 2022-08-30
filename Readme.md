@@ -269,12 +269,7 @@ each fiber will have a timeout that starts from when the fiber was spawned.
 
 ## Advisories
 
-### avoid `clojure.core/locking`
-
-Clojure's built in `locking` uses java's native monitors to handle locking. This can prevent a loom
-fiber from being able to yield - thereby blocking the underlying native thread and potentially lead
-to starvation under enough contention. To help with this, tapestry provides its own
-`tapestry.core/locking` macro which is implemented on top of a static atom.
+None at the moment
 
 ## CLJ Kondo Config
 
