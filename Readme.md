@@ -40,12 +40,12 @@ Some great further reading on the topic:
 
 ### Project State
 
-Tapestry is in early alpha. It was extracted out of a project that has been using it for about six
-months. Things are shaping up nicely, but there may be substantial API changes in the future.
-Right now manifold is used for streams and deferred representations, but I suspect that we may be
-able to remove it entirely and instead use JVM completable futures and queues. Streams may just be
-lazy sequences that are processed by dedicated fibers.
+Tapestry is in beta. As the APIs in loom have stabilized so too has tapestry.
+Still, breaking changes may happen as we evolve the library. Pre-`1.0.0` we will
+use the minor version to denote breaking changes.
 
+Tapestry is being used in production for several of Teknql's projects and has
+more or less replaced both `clojure.core/future` and `manifold.deferred/future`.
 
 ## Installation
 
