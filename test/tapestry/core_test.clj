@@ -174,3 +174,15 @@
       (is (= :default @f))
       (Thread/sleep 10)
       (is (not (sut/alive? f))))))
+
+(deftest IDeferred-test
+  (testing "can be used with manifold.streams"
+    (is (= [2 4 6]
+           (->> (s/->source [1 2 3])
+                (s/map #(sut/fiber (* % 2)))
+                (s/realize-each)
+                (s/stream->seq)))))
+  (testing "can be used with manifold.deferred/chain'"
+    (let [success? (atom false)]
+      @(d/chain' (sut/fiber true) (partial reset! success?))
+      (is @success?))))

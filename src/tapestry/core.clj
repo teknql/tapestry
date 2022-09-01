@@ -1,6 +1,7 @@
 (ns tapestry.core
   "Core namespace of Tapestry"
-  (:import [java.util.concurrent Semaphore CompletableFuture Phaser TimeUnit]
+  (:import [java.util.concurrent Semaphore CompletableFuture Phaser TimeUnit TimeoutException
+            Executors]
            [java.lang VirtualThread]
            [java.time Duration])
   (:require [manifold.stream :as s]
@@ -31,23 +32,60 @@
   [f]
   (alter-var-root #'on-error (constantly f)))
 
+(set! *warn-on-reflection* true)
+
+(def ^:private -static-executor
+  (Executors/newVirtualThreadPerTaskExecutor))
+
 (deftype ^{:no-doc true} Fiber
     [^VirtualThread virtualThread ^CompletableFuture future]
-  d/Deferrable
-  (to-deferred [_]
-    (d/->deferred future))
   clojure.lang.IDeref
   (deref [_]
     (try
-      (.join future)
-      (catch java.util.concurrent.CompletionException e
-        (throw (.getCause e))))))
+      (.get future)
+      (catch java.util.concurrent.ExecutionException e
+        (throw (.getCause e)))))
+  clojure.lang.IBlockingDeref
+  (deref [_ time timeout-value]
+    (try
+      (.get future time TimeUnit/MILLISECONDS)
+      (catch TimeoutException _
+        timeout-value)))
+  clojure.lang.IPending
+  (isRealized [_]
+    (.isDone future))
+  manifold.deferred.IDeferred
+  (executor [_]
+    -static-executor)
+  (realized [_]
+   (.isDone future))
+  (onRealized [_ on-success on-error]
+    (.handle ^CompletableFuture future
+             (reify java.util.function.BiFunction
+               (apply [_ res ex]
+                 (when res
+                   (on-success res))
+                 (when ex
+                   (on-error ex))))))
+  (successValue [_ default]
+    (try
+      (.getNow future default)
+      (catch Throwable _
+        default)))
+  (errorValue [_ default]
+    (if-not (.isDone future)
+      default
+      (try
+        (.getNow future nil)
+        default
+        (catch Throwable e
+          e)))))
 
 (defmethod print-method Fiber [^Fiber v ^java.io.Writer w]
-  (let [^VirtualThread vt        (.virtualThread v)
-        ^CompletableFuture future    (.future v)
-        is-alive? (.isAlive vt)
-        [val err] (try
+  (let [^VirtualThread vt         (.virtualThread v)
+        ^CompletableFuture future (.future v)
+        is-alive?                 (.isAlive vt)
+        [val err]                 (try
                     [(.getNow future nil) nil]
                     (catch Exception e
                       [nil e]))]

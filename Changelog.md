@@ -16,7 +16,7 @@ being able drop manifold.
 
 - *BREAKING*: `fiber` no longer returns a manifold deferred. It now returns a
   custom type `tapestry.core.Fiber` which implements `clojure.lang.IDeref` and
-  `manifold.deferred.Deferable`. For the most part this should be a seamless
+  `manifold.deferred.IDeferred`. For the most part this should be a seamless
   change, but if you were explicitly relying on it being a deferred you will
   need to update your code.
 
