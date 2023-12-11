@@ -219,7 +219,8 @@
           (fiber
             ~body-expr))
         (doall)
-        (map deref)))
+        (map deref)
+        (doall)))
 
 (defn periodically
   "Behaves similarly to `manifold.stream/periodically` but relies on a loom
