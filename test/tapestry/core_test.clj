@@ -129,7 +129,9 @@
 (deftest pfor-test
   (testing "works"
     (is (= '(1 2 3)
-           (sut/pfor [x (range 3)] (inc x))))))
+           (sut/pfor [x (range 3)] (inc x)))))
+  (testing "is eager"
+    (is (realized? (sut/pfor [x (range 3)] (inc x))))))
 
 (deftest interrupt-test
   (let [f (sut/fiber (Thread/sleep 10000))]
