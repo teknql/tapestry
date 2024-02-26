@@ -11,7 +11,7 @@
    :jvm-opts    ["--enable-preview"]
    :main-opts   ["-m" "kaocha.runner"]
    :extra-deps
-   {org.clojure/test.check {:mvn/version "0.10.0"}
-    lambdaisland/kaocha    {:mvn/version "0.0-541"}}}}
+   {org.clojure/test.check {:mvn/version "1.1.1"}
+    lambdaisland/kaocha    {:mvn/version "1.87.1366"}}}}
  :deps
- {manifold/manifold {:mvn/version "0.1.9-alpha3"}}}
+ {manifold/manifold {:mvn/version "0.4.2"}}}
