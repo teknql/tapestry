@@ -17,7 +17,7 @@ Fibers behave similarly to OS level threads, but are much lighter weight to spaw
 potentially millions of them to exist.
 
 Clojure already has the wonderful [core.async](https://github.com/clojure/core.async)
-and [manifold](https://github.com/aleph-io/manifold) libraries but writing maximally performant code
+and [manifold](https://github.com/clj-commons/manifold) libraries but writing maximally performant code
 in either requires the abstraction (channels, or promises) to leak all over your code
 (as you return channels or promise chains) to avoid blocking. Furthermore you frequently have to
 think about which executor will handle the blocking code.
