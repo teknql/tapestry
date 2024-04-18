@@ -1,0 +1,3 @@
+{:list-as
+ {tapestry.core/fiber-loop clojure.core/loop
+  tapestry.core/pfor clojure.core/for}}
