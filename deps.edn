@@ -13,4 +13,4 @@
    {org.clojure/test.check {:mvn/version "1.1.1"}
     lambdaisland/kaocha    {:mvn/version "1.87.1366"}}}}
  :deps
- {manifold/manifold {:mvn/version "0.4.2"}}}
+ {manifold/manifold {:mvn/version "0.4.3"}}}
