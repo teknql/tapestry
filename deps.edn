@@ -1,10 +1,12 @@
 {:paths ["src"]
  :pablo/config
- {:github      "teknql/tapestry"
-  :desc        "Loom for Clojure"
-  :target      :jar
-  :group-id    teknql
-  :artifact-id tapestry}
+ {:github       "teknql/tapestry"
+  :desc         "Loom for Clojure"
+  :target       :jar
+  :group-id     teknql
+  :artifact-id  tapestry
+  :license/name "MIT"
+  :license/url  "https://opensource.org/licenses/MIT"}
  :aliases
  {:test
   {:extra-paths ["test"]
