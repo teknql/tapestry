@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0
+
+Release that mostly stabalizes the API (moving out of SNAPSHOT) and updates the
+documentation to work with cljdoc
+
+### Features
+
+- Add `tapestry.core/send` for working with agents.
+
 ## 0.3.0-SNAPSHOT
 
 This release introduces the ability to interrupt fibers as well as introspect

@@ -1,7 +1,8 @@
 # Tapestry
 
-[![Build Status](https://img.shields.io/github/workflow/status/teknql/tapestry/CI.svg)](https://github.com/teknql/tapestry/actions)
+[![Build Status](https://github.com/teknql/tapestry/actions/workflows/ci.yml/badge.svg)](https://github.com/teknql/tapestry/actions)
 [![Clojars Project](https://img.shields.io/clojars/v/teknql/tapestry.svg?include_prereleases)](https://clojars.org/teknql/tapestry)
+[![cljdoc badge](https://cljdoc.org/badge/teknql/tapestry)](https://cljdoc.org/d/teknql/tapestry)
 
 Next generation concurrency primitives for Clojure built on top of Project Loom
 
@@ -40,70 +41,23 @@ Some great further reading on the topic:
 
 ### Project State
 
-Tapestry is in beta. As the APIs in loom have stabilized so too has tapestry.
-Still, breaking changes may happen as we evolve the library. Pre-`1.0.0` we will
-use the minor version to denote breaking changes.
+Tapestry is still pre-1.0. As the APIs in loom have stabilized so too has tapestry.
 
 Tapestry is being used in production for several of Teknql's projects and has
 more or less replaced both `clojure.core/future` and `manifold.deferred/future`.
+
+It is the ambition of the project to eventually drop manifold entirely, at which
+point it will likely hit 1.0.
 
 ## Installation
 
 Add to your deps.edn:
 
 ```
-teknql/tapestry {:mvn/version "0.3.0-SNAPSHOT"}
+teknql/tapestry {:mvn/version "0.4.0"}
 ```
-
-
-### Installing JDK 19
-
-You will need to be running a recent JDK 19 release
-
-You can download the latest version from the [JDK 19 Site](https://jdk.java.net/19/).
-
-On linux, installing it looks something like this:
-
-```
-tar -xvzf openjdk-19_linux-x64_bin.tar.gz
-sudo mv jdk-19/ /usr/lib/jvm/jdk-19
-cd /usr/lib/jvm
-sudo rm default default-runtime
-sudo ln -s jdk-19 $PWD/default
-sudo ln -s jdk-19 $PWD/default-runtime
-```
-
-Then you will need to add the `--enable-preview` flag to your JVM opts. In deps.edn it looks like:
-
-```
-{:aliases
- {:preview
-  {:jvm-opts ["--enable-preview"]}}}
-```
-
-```
-clojure -A:preview
-```
-
-Alternatively, you can install a loom preview build via [sdkman](https://sdkman.io/install):
-
-```
-$ sdk install java 17.ea.2.lm-open
-    ...
-Installing: java 17.ea.2.lm-open
-Done installing!
-
-Do you want java 17.ea.2.lm-open to be set as default? (Y/n): n
-$ sdk use java 17.ea.2.lm-open
-
-Using java version 17.ea.2.lm-open in this shell.
-```
-The sdkman maintainers update the loom preview build often. To find the current version identifier for the loom preview build run `sdk list java` and look for the identifier containing "lm-open".
 
 ## Showcase
-
-Full API documentation can be seen in the `tapestry.core` ns itself. Right now we can't build
-the documentation using clj-doc. You can track the issue [here](https://github.com/cljdoc/cljdoc/issues/275)
 
 Here is a demo of some of the basics.
 
@@ -265,6 +219,16 @@ each fiber will have a timeout that starts from when the fiber was spawned.
      (paralelly 5 some-operation)
      (asyncly 5 some-other-operation)
      (s/consume #(println "Got Result" %)))
+```
+
+#### Working with Agents
+
+``` clojure
+(let [counter (agent 0)]
+  (tapestry.core/send counter inc)
+  (await counter)
+  @a)
+  ;; => 1
 ```
 
 ## Advisories
