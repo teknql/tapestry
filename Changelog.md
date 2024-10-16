@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.2
+
+- Chore release to add a license to `pom.xml`
+
 ## 0.4.0
 
 Release that mostly stabalizes the API (moving out of SNAPSHOT) and updates the

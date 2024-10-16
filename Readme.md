@@ -54,7 +54,7 @@ point it will likely hit 1.0.
 Add to your deps.edn:
 
 ```
-teknql/tapestry {:mvn/version "0.4.0"}
+teknql/tapestry {:mvn/version "0.4.2"}
 ```
 
 ## Showcase
