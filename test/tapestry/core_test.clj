@@ -188,3 +188,20 @@
     (let [success? (atom false)]
       @(d/chain' (sut/fiber true) (partial reset! success?))
       (is @success?))))
+
+(deftest send-test
+  (let [a (agent 0)]
+    (testing "without arguments"
+      (sut/send a inc)
+      (await a)
+      (is (= 1 @a)))
+    (testing "with argument"
+      (sut/send a (constantly 0))
+      (sut/send a + 2 3)
+      (await a)
+      (is (= 5 @a)))
+    (testing "with multiple arguments"
+      (sut/send a (constantly 0))
+      (sut/send a + 1 2 3 4)
+      (await a)
+      (is (= 10 @a)))))

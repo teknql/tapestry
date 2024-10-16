@@ -5,7 +5,8 @@
            [java.lang VirtualThread]
            [java.time Duration])
   (:require [manifold.stream :as s]
-            [manifold.deferred :as d]))
+            [manifold.deferred :as d])
+  (:refer-clojure :exclude [send]))
 
 (def ^{:dynamic true
        :no-doc  true} *local-semaphore*
@@ -330,3 +331,10 @@
        true (s/buffer n)
        true (s/realize-each)
        seq? (s/stream->seq)))))
+
+(defn send
+  "A version of `send` that uses a loom fiber for the execution of the function `f`.
+
+  See `clojure.core/send` for details"
+  [a f & args]
+  (apply send-via -static-executor a f args))
