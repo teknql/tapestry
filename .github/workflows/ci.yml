@@ -18,17 +18,8 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      - name: Cache dependencies
-        uses: actions/cache@v2
-        env:
-          cache-name: cache-clj
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('deps.edn') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
       - name: Run Tests
-        uses: docker://teknql/openjdk:19-clojure
+        uses: docker://clojure:temurin-23-tools-deps
         with:
           entrypoint: /usr/local/bin/clojure
           args: -M:test
