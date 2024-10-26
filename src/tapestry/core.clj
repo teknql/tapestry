@@ -106,6 +106,16 @@
   (let [^VirtualThread vt (.virtualThread fiber)]
     (.isAlive vt)))
 
+(defn fiber-error
+  "Return the error of the provided `fiber` if it has errored, otherwise return nil"
+  [^Fiber fiber]
+  (when-not (alive? fiber)
+    (try
+      (.getNow (.future fiber) nil)
+      nil
+      (catch Exception e
+        e))))
+
 (defn interrupt!
   "Interrupt the provided fiber, causing a `java.lang.InterruptedException` to be
   thrown in the `fiber`

@@ -126,6 +126,17 @@
       (locking resource
         (is (true? @resource))))))
 
+(deftest fiber-error-test
+  (let [die? (promise)
+        err (ex-info "Boom" {})
+        f   (sut/fiber
+              @die?
+              (throw err))]
+    (is (nil? (sut/fiber-error f)))
+    (deliver die? true)
+    (Thread/sleep 10) ;; Let the fiber die
+    (is (some? (sut/fiber-error f)))))
+
 (deftest pfor-test
   (testing "works"
     (is (= '(1 2 3)
