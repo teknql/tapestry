@@ -32,7 +32,7 @@ Some great further reading on the topic:
   - [What color is your function](https://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/) - A mental exploration of
   the leaking of the abstraction.
   - [Async Rust Book Async Intro](https://rust-lang.github.io/async-book/01_getting_started/02_why_async.html) - A
-  good explaination of why we want async. The rest of this book is fantastic in terms of
+  good explanation of why we want async. The rest of this book is fantastic in terms of
   understanding how async execution works under the hood. In `manifold` and `core.async`
   the JVM executor is mostly analogous to the rust's concept of the Executor. In a language like
   Rust, without a runtime, being explicit and "colorizing functions" makes sense, but with a
@@ -204,19 +204,19 @@ each fiber will have a timeout that starts from when the fiber was spawned.
          '[tick.alpha.api :as t]
          '[tapestry.core :refer [periodically parallelly asyncly]])
 
-;; tapestry.core/periodically behaves very similar to manfold's built in periodically,
+;; tapestry.core/periodically behaves very similar to manifold's built in periodically,
 ;; but runs each task in a fiber. You can terminate it by closing the stream.
 (let [count     (atom 0)
-        generator (periodically (t/new-duration 1 :seconds) #(swap! count inc))]
+      generator (periodically (t/new-duration 1 :seconds) #(swap! count inc))]
     (->> generator
          (s/consume #(println "Count is now:" %)))
     (Thread/sleep 5000)
     (s/close! generator))
 
-;; Also, `parallelly` and `asyncly` both suppport manifold streams, allowing you to describe parallel
+;; Also, `parallelly` and `asyncly` both support manifold streams, allowing you to describe parallel
 ;; execution pipelines
 (->> (s/stream)
-     (paralelly 5 some-operation)
+     (parallelly 5 some-operation)
      (asyncly 5 some-other-operation)
      (s/consume #(println "Got Result" %)))
 ```
