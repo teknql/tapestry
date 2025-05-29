@@ -284,7 +284,8 @@
                 @(s/put! result (f %))
                 (catch Exception e
                   (when on-error
-                    (on-error e "Exception in asyncly function")))
+                    (on-error e "Exception in asyncly function"))
+                  (throw e))
                 (finally
                   (.arriveAndDeregister phaser)))))
        s)
@@ -315,7 +316,8 @@
                    @(s/put! result (f val))
                    (catch Exception e
                      (when on-error
-                       (on-error e "Error in asyncly callback"))))
+                       (on-error e "Error in asyncly callback"))
+                     (throw e)))
                  (recur))))))
      (s/on-drained work-buffer #(fiber (.arriveAndDeregister phaser)
                                        (.awaitAdvance phaser 0)
