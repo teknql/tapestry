@@ -111,7 +111,7 @@
   [^Fiber fiber]
   (when-not (alive? fiber)
     (try
-      (.getNow (.future fiber) nil)
+      (.getNow ^CompletableFuture (.future fiber) nil)
       nil
       (catch Exception e
         e))))
