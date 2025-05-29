@@ -78,6 +78,8 @@
                  (s/stream->seq)
                  (sort)))))
 
+  (testing "handling nil"
+    (is (= '() (sut/asyncly inc nil))))
   (testing "seq mode"
     (is (= [2 3 4]
            (->> [1 2 3]
@@ -118,6 +120,9 @@
            (->> (s/->source [1 2 3])
                 (sut/parallelly inc)
                 (s/stream->seq)))))
+
+  (testing "handles nil"
+    (is (= '() (sut/parallelly inc nil))))
 
   (testing "seq mode"
     (is (= [2 3 4 5 6]

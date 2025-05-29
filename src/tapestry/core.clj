@@ -274,21 +274,22 @@
    (let [result (s/stream)
          seq?   (seqable? s)
          s      (if seq?
-                  (s/->source s)
+                  (s/->source (or s '()))
                   s)
-         phaser (Phaser.)]
+         phaser (Phaser. 1)]
      (s/consume
-       #(fiber
-          (try
-            (.register phaser)
-            @(s/put! result (f %))
-            (catch Exception e
-              (when on-error
-                (on-error e "Exception in asyncly function")))
-            (finally
-              (.arriveAndDeregister phaser))))
+       #(do (.register phaser)
+            (fiber
+              (try
+                @(s/put! result (f %))
+                (catch Exception e
+                  (when on-error
+                    (on-error e "Exception in asyncly function")))
+                (finally
+                  (.arriveAndDeregister phaser)))))
        s)
      (s/on-drained s (bound-fn* #(fiber
+                                   (.arriveAndDeregister phaser)
                                    (when-not (.isTerminated phaser)
                                      (.awaitAdvance phaser 0))
                                    (s/close! result))))
@@ -300,10 +301,10 @@
    (let [result      (s/stream)
          seq?        (seqable? s)
          s           (if seq?
-                       (s/->source s)
+                       (s/->source (or s '()))
                        s)
          work-buffer (s/stream n)
-         phaser      (Phaser. n)]
+         phaser      (Phaser. (inc n))]
      (s/connect s work-buffer)
      (dotimes [_ n]
        (fiber-loop []
@@ -316,7 +317,8 @@
                      (when on-error
                        (on-error e "Error in asyncly callback"))))
                  (recur))))))
-     (s/on-drained work-buffer #(fiber (.awaitAdvance phaser 0)
+     (s/on-drained work-buffer #(fiber (.arriveAndDeregister phaser)
+                                       (.awaitAdvance phaser 0)
                                        (s/close! result)))
      (if seq?
        (s/stream->seq result)
