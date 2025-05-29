@@ -176,7 +176,8 @@
                      (try
                        (.complete cf# (do ~@body))
                        (catch Exception e#
-                         (.completeExceptionally cf# e#))
+                         (.completeExceptionally cf# e#)
+                         (throw e#))
                        (finally
                          (when *local-semaphore*
                            (.release ^Semaphore *local-semaphore*))))))

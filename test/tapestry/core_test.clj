@@ -6,6 +6,22 @@
   (:import [java.util.concurrent TimeoutException]
            [java.lang InterruptedException]))
 
+(defmacro with-global-error-handler
+  "Macro to install `f` as the global error handler for the duration of the `body`.
+
+  `f` is an arity 2 function that will be called with `thread` and `Throwable` when an
+  error is encountered"
+  [f & body]
+  `(let [existing-handler# (Thread/getDefaultUncaughtExceptionHandler)]
+     (try
+       (Thread/setDefaultUncaughtExceptionHandler
+         (reify Thread$UncaughtExceptionHandler
+           (uncaughtException [_# thread# e#]
+             (~f thread# e#))))
+       ~@body
+       (finally
+         (Thread/setDefaultUncaughtExceptionHandler existing-handler#)))))
+
 (deftest with-max-parallelism-test
   (testing "with-max-parallism limits parallel execution"
     (let [state        (atom {:running 0 :max-seen 0 :count 0})
@@ -127,15 +143,19 @@
         (is (true? @resource))))))
 
 (deftest fiber-error-test
-  (let [die? (promise)
-        err (ex-info "Boom" {})
-        f   (sut/fiber
-              @die?
-              (throw err))]
-    (is (nil? (sut/fiber-error f)))
-    (deliver die? true)
-    (Thread/sleep 10) ;; Let the fiber die
-    (is (some? (sut/fiber-error f)))))
+  (let [die?              (promise)
+        err               (ex-info "Boom" {})
+        err-handler-call* (atom nil)]
+    (with-global-error-handler
+      #(reset! err-handler-call* %&)
+      (let [f (sut/fiber
+                @die?
+                (throw err))]
+        (is (nil? (sut/fiber-error f)))
+        (deliver die? true)
+        (Thread/sleep 10) ;; Let the fiber die
+        (is (some? (sut/fiber-error f)))
+        (is (some? @err-handler-call*))))))
 
 (deftest pfor-test
   (testing "works"
