@@ -54,7 +54,8 @@ point it will likely hit 1.0.
 Add to your deps.edn:
 
 ```
-teknql/tapestry {:mvn/version "0.4.2"}
+teknql/tapestry {:git/url "https://github.com/teknql/tapestry"
+                 :git/sha "d4c09e1866ab9d4988f04fca83969043b4c857f8"}
 ```
 
 ## Showcase
@@ -229,6 +230,47 @@ each fiber will have a timeout that starts from when the fiber was spawned.
   (await counter)
   @a)
   ;; => 1
+```
+
+## Experimental Features
+
+Note that you must run your JVM with `--enable-preview` for the following
+
+#### alts
+
+``` clojure
+(require '[tapestry.experimental :refer [alts]])
+
+;; Runs all expressions in parallel returning the first successful
+;; result. Will not forward errors from children expressions.
+(alts
+  (do (Thread/sleep 100)
+      :first)
+  (do (Thread/sleep 10)
+      :second))
+;; => :second after 10ms
+```
+
+#### Queues
+
+The beginnings of potentially dropping manifold support. Lightweight wrapper around java's
+BlockingQueues with the notion of `closing` ala `manifold` and `core.async`.
+
+``` clojure
+(require '[tapestry.queue :as q]
+         '[tapestry.core :refer [fiber alive?]]')
+
+;; By default a queue has no buffer
+(let [q     (q/queue)
+      take* (fiber (q/take! q))]
+  (alive? take*)
+  (q/try-take! q) ;; => nil, no value available
+  (q/put! q :value) ;; => true, value put successfuly
+  @take* ;; => :value, resolved in the fiber above
+  (q/close! q) ;; Closing a queue will make it so no further items are accepted,
+               ;; but previously queued items will be delivered via `take!`
+  (q/put! q :value) ;; Returns false
+)
 ```
 
 ## Advisories
