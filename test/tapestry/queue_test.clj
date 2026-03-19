@@ -44,3 +44,22 @@
       (is (= :timeout (sut/try-put! q :val 0 :timeout)))
       (sut/close! q)
       (is (false? (sut/try-put! q :val 0 :timeout))))))
+
+(deftest queue--close-during-take-test
+  (testing "take! returns nil when queue is closed while waiting"
+    (let [q      (sut/queue 2)
+          result (fiber (sut/take! q))]
+      (Thread/sleep 20)
+      (is (alive? result))
+      (sut/close! q)
+      (is (nil? @result)))))
+
+(deftest queue--close-drains-test
+  (testing "close! allows remaining items to be drained"
+    (let [q (sut/queue 4)]
+      (sut/put! q :a)
+      (sut/put! q :b)
+      (sut/close! q)
+      (is (= :a (sut/take! q)))
+      (is (= :b (sut/take! q)))
+      (is (nil? (sut/take! q))))))
