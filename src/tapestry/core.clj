@@ -116,6 +116,11 @@
       (catch Exception e
         e))))
 
+(defn errored?
+  "Return whether the provided `fiber` has errored"
+  [^Fiber fiber]
+  (.isCompletedExceptionally (.future fiber)))
+
 (defn interrupt!
   "Interrupt the provided fiber, causing a `java.lang.InterruptedException` to be
   thrown in the `fiber`
