@@ -99,7 +99,67 @@
                    (s/stream->seq)
                    (sort))))
       (is (zero? (:running @state)))
-      (is (<= (:max-seen @state) 3)))))
+      (is (<= (:max-seen @state) 3))))
+
+  (testing "unbounded - seq mode throws on error"
+    (sut/set-stream-error-handler! (fn [& _]))
+    (try
+      (let [boom (ex-info "boom" {})]
+        (is (thrown-with-msg?
+              clojure.lang.ExceptionInfo #"boom"
+              ;; must force the lazy seq to realize the throw
+              (doall (sut/asyncly (fn [x] (when (= x 2) (throw boom)) x)
+                                  [1 2 3])))))
+      (finally
+        (sut/set-stream-error-handler! println))))
+
+  (testing "unbounded - stream mode closes result stream on error (no throw)"
+    (sut/set-stream-error-handler! (fn [& _]))
+    (try
+      (let [result (sut/asyncly #(throw (ex-info "oops" {}))
+                                (s/->source [1 2 3]))]
+        (s/stream->seq result) ;; drains cleanly, does not throw
+        (Thread/sleep 20)
+        (is (s/closed? result)))
+      (finally
+        (sut/set-stream-error-handler! println))))
+
+  (testing "unbounded - stream mode closes source stream on error"
+    (sut/set-stream-error-handler! (fn [& _]))
+    (try
+      (let [source (s/stream)
+            _      (s/put! source 1)
+            _      (s/put! source 2)
+            result (sut/asyncly #(throw (ex-info "oops" {})) source)]
+        (s/stream->seq result)
+        (Thread/sleep 20)
+        (is (s/closed? source)))
+      (finally
+        (sut/set-stream-error-handler! println))))
+
+  (testing "bounded - seq mode throws on error"
+    (sut/set-stream-error-handler! (fn [& _]))
+    (try
+      (let [boom (ex-info "bounded-boom" {})]
+        (is (thrown-with-msg?
+              clojure.lang.ExceptionInfo #"bounded-boom"
+              (doall (sut/asyncly 2
+                                  (fn [x] (when (= x 2) (throw boom)) x)
+                                  [1 2 3])))))
+      (finally
+        (sut/set-stream-error-handler! println))))
+
+  (testing "bounded - stream mode closes result stream on error (no throw)"
+    (sut/set-stream-error-handler! (fn [& _]))
+    (try
+      (let [result (sut/asyncly 2
+                                #(throw (ex-info "oops" {}))
+                                (s/->source [1 2 3]))]
+        (s/stream->seq result)
+        (Thread/sleep 20)
+        (is (s/closed? result)))
+      (finally
+        (sut/set-stream-error-handler! println)))))
 
 (deftest periodically-test
   (let [s (sut/periodically 3 5 (constantly true))]

@@ -286,11 +286,14 @@
        #(do (.register phaser)
             (fiber
               (try
-                @(s/put! result (f %))
+                @(s/put! result (if seq? [:ok (f %)] (f %)))
                 (catch Exception e
                   (when on-error
                     (on-error e "Exception in asyncly function"))
-                  (throw e))
+                  (when seq?
+                    @(s/put! result [:error e]))
+                  (s/close! result)
+                  (s/close! s))
                 (finally
                   (.arriveAndDeregister phaser)))))
        s)
@@ -301,7 +304,9 @@
                                    (s/close! result))))
      (s/on-closed result #(s/close! s))
      (if seq?
-       (s/stream->seq result)
+       (->> (s/stream->seq result)
+            (map (fn [[tag v]]
+                   (if (= :ok tag) v (throw v)))))
        result)))
   ([^long n f s]
    (let [result      (s/stream)
@@ -318,17 +323,22 @@
            (if (= :closed val)
              (.arriveAndDeregister phaser)
              (do (try
-                   @(s/put! result (f val))
+                   @(s/put! result (if seq? [:ok (f val)] (f val)))
                    (catch Exception e
                      (when on-error
                        (on-error e "Error in asyncly callback"))
-                     (throw e)))
+                     (when seq?
+                       @(s/put! result [:error e]))
+                     (s/close! result)
+                     (s/close! work-buffer)))
                  (recur))))))
      (s/on-drained work-buffer #(fiber (.arriveAndDeregister phaser)
                                        (.awaitAdvance phaser 0)
                                        (s/close! result)))
      (if seq?
-       (s/stream->seq result)
+       (->> (s/stream->seq result)
+            (map (fn [[tag v]]
+                   (if (= :ok tag) v (throw v)))))
        result))))
 
 (defn parallelly
