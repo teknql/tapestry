@@ -19,7 +19,7 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       - name: Run Tests
-        uses: docker://clojure:temurin-23-tools-deps
+        uses: docker://clojure:temurin-25-tools-deps
         with:
           entrypoint: /usr/local/bin/clojure
           args: -M:test
