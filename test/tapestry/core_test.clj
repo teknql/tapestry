@@ -149,6 +149,20 @@
       (finally
         (sut/set-stream-error-handler! println))))
 
+  (testing "bounded - error not lost when other workers produce nil results (race condition)"
+    ;; This is the specific race: many workers return nil, one throws.
+    ;; The [:error e] tuple can be swallowed by stream close before the consumer sees it.
+    ;; The promise sentinel must catch it as a fallback.
+    (sut/set-stream-error-handler! (fn [& _]))
+    (try
+      (is (thrown-with-msg?
+            clojure.lang.ExceptionInfo #"boom"
+            (doall (sut/asyncly 4
+                                (fn [x] (when (= x 5) (throw (ex-info "boom" {}))) nil)
+                                (range 100)))))
+      (finally
+        (sut/set-stream-error-handler! println))))
+
   (testing "bounded - stream mode closes result stream on error (no throw)"
     (sut/set-stream-error-handler! (fn [& _]))
     (try

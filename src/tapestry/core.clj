@@ -276,12 +276,13 @@
 
   Optionally takes a number `n` which will be the maximum parallelism."
   ([f s]
-   (let [result (s/stream)
-         seq?   (seqable? s)
-         s      (if seq?
-                  (s/->source (or s '()))
-                  s)
-         phaser (Phaser. 1)]
+   (let [result  (s/stream)
+         seq?    (seqable? s)
+         s       (if seq?
+                   (s/->source (or s '()))
+                   s)
+         phaser  (Phaser. 1)
+         error*  (promise)]
      (s/consume
        #(do (.register phaser)
             (fiber
@@ -290,8 +291,7 @@
                 (catch Exception e
                   (when on-error
                     (on-error e "Exception in asyncly function"))
-                  (when seq?
-                    @(s/put! result [:error e]))
+                  (deliver error* e)
                   (s/close! result)
                   (s/close! s))
                 (finally
@@ -304,9 +304,13 @@
                                    (s/close! result))))
      (s/on-closed result #(s/close! s))
      (if seq?
-       (->> (s/stream->seq result)
-            (map (fn [[tag v]]
-                   (if (= :ok tag) v (throw v)))))
+       (concat
+         (->> (s/stream->seq result)
+              (map (fn [[tag v]]
+                     (if (= :ok tag) v (throw v)))))
+         (lazy-seq
+           (when (realized? error*)
+             (throw @error*))))
        result)))
   ([^long n f s]
    (let [result      (s/stream)
@@ -315,7 +319,8 @@
                        (s/->source (or s '()))
                        s)
          work-buffer (s/stream n)
-         phaser      (Phaser. (inc n))]
+         phaser      (Phaser. (inc n))
+         error*      (promise)]
      (s/connect s work-buffer)
      (dotimes [_ n]
        (fiber-loop []
@@ -327,8 +332,7 @@
                    (catch Exception e
                      (when on-error
                        (on-error e "Error in asyncly callback"))
-                     (when seq?
-                       @(s/put! result [:error e]))
+                     (deliver error* e)
                      (s/close! result)
                      (s/close! work-buffer)))
                  (recur))))))
@@ -336,9 +340,13 @@
                                        (.awaitAdvance phaser 0)
                                        (s/close! result)))
      (if seq?
-       (->> (s/stream->seq result)
-            (map (fn [[tag v]]
-                   (if (= :ok tag) v (throw v)))))
+       (concat
+         (->> (s/stream->seq result)
+              (map (fn [[tag v]]
+                     (if (= :ok tag) v (throw v)))))
+         (lazy-seq
+           (when (realized? error*)
+             (throw @error*))))
        result))))
 
 (defn parallelly
