@@ -113,6 +113,27 @@
       (finally
         (sut/set-stream-error-handler! println))))
 
+  (testing "unbounded - no new fibers dispatched after exception"
+    ;; The unbounded path cannot reliably interrupt already-running fibers (they are
+    ;; ephemeral and may not yet be tracked when the error fires). What it CAN guarantee
+    ;; is that no NEW fibers are dispatched once error* is realized.
+    (sut/set-stream-error-handler! (fn [& _]))
+    (try
+      (let [call-count (atom 0)]
+        (is (thrown-with-msg?
+              clojure.lang.ExceptionInfo #"boom"
+              (doall (sut/asyncly
+                       (fn [x]
+                         (swap! call-count inc)
+                         (when (= x 0)
+                           (throw (ex-info "boom" {})))
+                         x)
+                       (range 100)))))
+        ;; Far fewer than 100 items should have been dispatched
+        (is (< @call-count 50)))
+      (finally
+        (sut/set-stream-error-handler! println))))
+
   (testing "unbounded - stream mode closes result stream on error (no throw)"
     (sut/set-stream-error-handler! (fn [& _]))
     (try
@@ -160,6 +181,29 @@
             (doall (sut/asyncly 4
                                 (fn [x] (when (= x 5) (throw (ex-info "boom" {}))) nil)
                                 (range 100)))))
+      (finally
+        (sut/set-stream-error-handler! println))))
+
+  (testing "bounded - exception interrupts blocked workers promptly"
+    ;; Workers block indefinitely on Thread/sleep; one throws immediately.
+    ;; The throwing worker must interrupt the sleeping ones so the call returns
+    ;; quickly. ::timeout means workers were not interrupted.
+    (sut/set-stream-error-handler! (fn [& _]))
+    (try
+      (let [result* (promise)]
+        (sut/fiber
+          (try
+            (doall (sut/asyncly 4
+                                (fn [x]
+                                  (when (= x 0)
+                                    (throw (ex-info "interrupted-boom" {})))
+                                  (Thread/sleep Long/MAX_VALUE))
+                                (range 10)))
+            (catch Exception e (deliver result* e))))
+        (let [outcome (deref result* 10000 ::timeout)]
+          (is (not= ::timeout outcome) "workers were not interrupted — timed out after 10s")
+          (is (instance? clojure.lang.ExceptionInfo outcome))
+          (is (re-find #"interrupted-boom" (ex-message outcome)))))
       (finally
         (sut/set-stream-error-handler! println))))
 

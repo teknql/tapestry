@@ -282,20 +282,32 @@
                    (s/->source (or s '()))
                    s)
          phaser  (Phaser. 1)
-         error*  (promise)]
+         error*  (when seq? (promise))]
      (s/consume
-       #(do (.register phaser)
-            (fiber
-              (try
-                @(s/put! result (if seq? [:ok (f %)] (f %)))
-                (catch Exception e
-                  (when on-error
-                    (on-error e "Exception in asyncly function"))
-                  (deliver error* e)
-                  (s/close! result)
-                  (s/close! s))
-                (finally
-                  (.arriveAndDeregister phaser)))))
+       (fn [item]
+         ;; Skip dispatching new fibers once an error has occurred. Unlike the n-arity
+         ;; path we cannot pre-populate a worker list, so we rely on this guard plus
+         ;; a second check inside the fiber body to prevent already-spawned fibers from
+         ;; doing work after an error. Interrupting in-flight fibers is left to the
+         ;; caller (e.g. wrapping with with-timeout or interrupting the outer fiber).
+         (when-not (and error* (realized? error*))
+           (.register phaser)
+           (fiber
+             (try
+               (when-not (and error* (realized? error*))
+                 @(s/put! result (f item)))
+               (catch Exception e
+                 (when on-error
+                   (on-error e "Exception in asyncly function"))
+                 (if seq?
+                   ;; Deliver error and close source; on-drained awaits the phaser
+                   ;; (ensuring all in-flight workers finish) before closing result.
+                   ;; This guarantees error* is realized before the sentinel runs.
+                   (do (deliver error* e)
+                       (s/close! s))
+                   (s/close! result)))
+               (finally
+                 (.arriveAndDeregister phaser))))))
        s)
      (s/on-drained s (bound-fn* #(fiber
                                    (.arriveAndDeregister phaser)
@@ -305,12 +317,10 @@
      (s/on-closed result #(s/close! s))
      (if seq?
        (concat
-         (->> (s/stream->seq result)
-              (map (fn [[tag v]]
-                     (if (= :ok tag) v (throw v)))))
+         (s/stream->seq result)
          (lazy-seq
            (when (realized? error*)
-             (throw @error*))))
+             (throw (deref error* 0 nil)))))
        result)))
   ([^long n f s]
    (let [result      (s/stream)
@@ -320,33 +330,62 @@
                        s)
          work-buffer (s/stream n)
          phaser      (Phaser. (inc n))
-         error*      (promise)]
+         error*      (when seq? (promise))
+         ;; Promise of the full worker list. Delivered before the source is connected
+         ;; so no worker can receive an item (and therefore throw) until @workers* is
+         ;; already realized — avoiding a self-referential closure race.
+         workers*    (promise)
+         workers     (mapv
+                       (fn [_]
+                         (fiber
+                           ;; Deref workers* eagerly: it is guaranteed realized before
+                           ;; s/connect starts work, so this never blocks. Dereferencing
+                           ;; outside the try avoids Clojure's CountDownLatch.await throwing
+                           ;; InterruptedException even on an already-realized promise.
+                           (let [siblings @workers*]
+                             (try
+                               (loop []
+                                 (let [val (try @(s/take! work-buffer :closed)
+                                                (catch InterruptedException _ :closed))]
+                                   (when (not= :closed val)
+                                     (when-not (and error* (realized? error*))
+                                       (try
+                                         @(s/put! result (f val))
+                                         (catch InterruptedException _
+                                           ;; Intentionally interrupted by another worker's error;
+                                           ;; swallow and exit the loop cleanly via the finally below.
+                                           nil)
+                                         (catch Exception e
+                                           (when on-error
+                                             (on-error e "Error in asyncly callback"))
+                                           (doseq [w siblings]
+                                             (interrupt! w))
+                                           ;; Interrupting siblings includes self; clear the flag
+                                           ;; so subsequent blocking calls don't throw InterruptedException.
+                                           (Thread/interrupted)
+                                           (if seq?
+                                             ;; Deliver error and close work-buffer; on-drained awaits
+                                             ;; the phaser (all in-flight workers done) before closing
+                                             ;; result, guaranteeing error* is realized for the sentinel.
+                                             (do (deliver error* e)
+                                                 (s/close! work-buffer))
+                                             (do (s/close! result)
+                                                 (s/close! work-buffer))))))
+                                     (recur))))
+                               (finally
+                                 (.arriveAndDeregister phaser))))))
+                       (range n))]
+     (deliver workers* workers)
      (s/connect s work-buffer)
-     (dotimes [_ n]
-       (fiber-loop []
-         (let [val @(s/take! work-buffer :closed)]
-           (if (= :closed val)
-             (.arriveAndDeregister phaser)
-             (do (try
-                   @(s/put! result (if seq? [:ok (f val)] (f val)))
-                   (catch Exception e
-                     (when on-error
-                       (on-error e "Error in asyncly callback"))
-                     (deliver error* e)
-                     (s/close! result)
-                     (s/close! work-buffer)))
-                 (recur))))))
      (s/on-drained work-buffer #(fiber (.arriveAndDeregister phaser)
                                        (.awaitAdvance phaser 0)
                                        (s/close! result)))
      (if seq?
        (concat
-         (->> (s/stream->seq result)
-              (map (fn [[tag v]]
-                     (if (= :ok tag) v (throw v)))))
+         (s/stream->seq result)
          (lazy-seq
            (when (realized? error*)
-             (throw @error*))))
+             (throw (deref error* 0 nil)))))
        result))))
 
 (defn parallelly
