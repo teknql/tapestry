@@ -121,7 +121,7 @@
 (defn errored?
   "Return whether the provided `fiber` has errored"
   [^Fiber fiber]
-  (.isCompletedExceptionally (.future fiber)))
+  (.isCompletedExceptionally ^CompletableFuture (.future fiber)))
 
 (defn interrupt!
   "Interrupt the provided fiber, causing a `java.lang.InterruptedException` to be
