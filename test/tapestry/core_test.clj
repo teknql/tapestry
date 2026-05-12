@@ -341,7 +341,17 @@
   (testing "can be used with manifold.deferred/chain'"
     (let [success? (atom false)]
       @(d/chain' (sut/fiber true) (partial reset! success?))
-      (is @success?))))
+      (is @success?)))
+  (testing "onRealized fires on-success for nil result"
+    (let [result (promise)
+          f      (sut/fiber nil)]
+      (d/on-realized f #(deliver result [:success %]) #(deliver result [:error %]))
+      (is (= [:success nil] (deref result 1000 :timeout)))))
+  (testing "onRealized fires on-success for false result"
+    (let [result (promise)
+          f      (sut/fiber false)]
+      (d/on-realized f #(deliver result [:success %]) #(deliver result [:error %]))
+      (is (= [:success false] (deref result 1000 :timeout))))))
 
 (deftest send-test
   (let [a (agent 0)]

@@ -66,10 +66,9 @@
     (.handle ^CompletableFuture future
              (reify java.util.function.BiFunction
                (apply [_ res ex]
-                 (when res
-                   (on-success res))
-                 (when ex
-                   (on-error ex))))))
+                 (if ex
+                   (on-error ex)
+                   (on-success res))))))
   (successValue [_ default]
     (try
       (.getNow future default)
