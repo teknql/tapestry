@@ -182,7 +182,7 @@
                        (.acquire ^Semaphore *local-semaphore*))
                      (try
                        (.complete cf# (do ~@body))
-                       (catch Exception e#
+                       (catch Throwable e#
                          (.completeExceptionally cf# e#)
                          (throw e#))
                        (finally
@@ -191,7 +191,7 @@
          fiber#  (Fiber. thread# cf#)]
      (when *local-timeout*
        (timeout! fiber# *local-timeout*))
-     (Fiber. thread# cf#)))
+     fiber#))
 
 (defmacro with-max-parallelism
   "Executes the provided body with an executor that ensures that at most `n` fibers
