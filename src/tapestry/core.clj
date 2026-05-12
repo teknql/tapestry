@@ -132,22 +132,6 @@
     (.interrupt vt))
   fiber)
 
-(defn- -interrupt-on-timeout!
-  "Private internal function to wire up a `handle` to shutdown the fiber
-  on timeout.
-
-  Returns the provided `fiber`"
-  [^Fiber fiber]
-  (.handle ^CompletableFuture (.future fiber)
-           (reify java.util.function.BiFunction
-             (apply [_ res ex]
-               (when (alive? fiber)
-                 (interrupt! fiber))
-               (when ex
-                 (throw ex))
-               res)))
-  fiber)
-
 (defn timeout!
   "Set the provided `timeout` on the provided `fiber`, causing a
   `java.util.concurrent.TimeoutException` to be thrown on the deferred (or `default` to be returrned)
@@ -161,7 +145,7 @@
      (.orTimeout
        ^CompletableFuture (.future fiber)
        millis TimeUnit/MILLISECONDS)
-     (-interrupt-on-timeout! fiber)))
+     fiber))
   ([^Fiber fiber timeout default]
    (let [millis (if (pos-int? timeout) timeout (.toMillis ^Duration timeout))]
      (.completeOnTimeout
@@ -169,7 +153,13 @@
        default
        millis
        TimeUnit/MILLISECONDS)
-     (-interrupt-on-timeout! fiber))))
+     ;; Wire up a completion handler to interrupt the fiber if it's still alive
+     (.whenComplete ^CompletableFuture (.future fiber)
+                    (reify java.util.function.BiConsumer
+                      (accept [_ _res _ex]
+                        (when (alive? fiber)
+                          (interrupt! fiber)))))
+     fiber)))
 
 (defmacro fiber
   "Execute body on a loom fiber, returning a deferred that will resolve when the fiber completes."
@@ -191,7 +181,8 @@
      (.whenComplete cf#
                     (reify java.util.function.BiConsumer
                       (accept [_ _res# ex#]
-                        (when (instance? java.util.concurrent.CancellationException ex#)
+                        (when (or (instance? java.util.concurrent.CancellationException ex#)
+                                  (instance? TimeoutException ex#))
                           (interrupt! fiber#)))))
      (when *local-timeout*
        (timeout! fiber# *local-timeout*))
