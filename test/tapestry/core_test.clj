@@ -3,7 +3,7 @@
             [clojure.test :refer [deftest testing is]]
             [manifold.stream :as s]
             [manifold.deferred :as d])
-  (:import [java.util.concurrent TimeoutException]
+  (:import [java.util.concurrent TimeoutException CancellationException CompletableFuture]
            [java.lang InterruptedException]))
 
 (defmacro with-global-error-handler
@@ -297,6 +297,18 @@
                          :handled)))]
     (sut/interrupt! f)
     (is (= :handled @f))))
+
+(deftest cancel-interrupts-thread-test
+  (testing "cancelling the CompletableFuture interrupts the virtual thread"
+    (let [f (sut/fiber (Thread/sleep 10000))]
+      (.cancel ^CompletableFuture (.future f) true)
+      (Thread/sleep 50)
+      (is (not (sut/alive? f)))))
+  (testing "cancel on already-completed fiber is a no-op"
+    (let [f (sut/fiber :done)]
+      @f ;; wait for completion
+      (is (false? (.cancel ^CompletableFuture (.future f) true)))
+      (is (= :done @f)))))
 
 (deftest alive?-test
   (let [f (sut/fiber (Thread/sleep 100))]

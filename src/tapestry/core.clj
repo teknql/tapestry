@@ -188,6 +188,11 @@
                          (when *local-semaphore*
                            (.release ^Semaphore *local-semaphore*))))))
          fiber#  (Fiber. thread# cf#)]
+     (.whenComplete cf#
+                    (reify java.util.function.BiConsumer
+                      (accept [_ _res# ex#]
+                        (when (instance? java.util.concurrent.CancellationException ex#)
+                          (interrupt! fiber#)))))
      (when *local-timeout*
        (timeout! fiber# *local-timeout*))
      fiber#))
