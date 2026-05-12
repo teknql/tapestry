@@ -51,7 +51,9 @@
     (try
       (.get future time TimeUnit/MILLISECONDS)
       (catch TimeoutException _
-        timeout-value)))
+        timeout-value)
+      (catch java.util.concurrent.ExecutionException e
+        (throw (.getCause e)))))
   clojure.lang.IPending
   (isRealized [_]
     (.isDone future))
