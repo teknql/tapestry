@@ -352,12 +352,13 @@
          workers     (mapv
                        (fn [_]
                          (fiber
-                           ;; Deref workers* eagerly: it is guaranteed realized before
-                           ;; s/connect starts work, so this never blocks. Dereferencing
-                           ;; outside the try avoids Clojure's CountDownLatch.await throwing
-                           ;; InterruptedException even on an already-realized promise.
-                           (let [siblings @workers*]
-                             (try
+                           (try
+                             ;; Deref workers* eagerly: it is guaranteed realized before
+                             ;; s/connect starts work, so this never blocks.  Must be
+                             ;; inside try/finally so that phaser is always deregistered
+                             ;; even if an interrupt arrives during the CountDownLatch
+                             ;; inside the promise deref.
+                             (let [siblings @workers*]
                                (loop []
                                  (let [val (try @(s/take! work-buffer :closed)
                                                 (catch InterruptedException _ :closed))]
@@ -385,9 +386,9 @@
                                                  (s/close! work-buffer))
                                              (do (s/close! result)
                                                  (s/close! work-buffer))))))
-                                     (recur))))
-                               (finally
-                                 (.arriveAndDeregister phaser))))))
+                                     (recur)))))
+                             (finally
+                               (.arriveAndDeregister phaser)))))
                        (range n))]
      (deliver workers* workers)
      (s/connect s work-buffer)
