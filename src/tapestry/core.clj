@@ -47,6 +47,12 @@
 (def ^:private -static-executor
   (Executors/newVirtualThreadPerTaskExecutor))
 
+(defn ^:no-doc -unstarted-virtual-thread
+  "Create an unstarted virtual thread. Split from `Thread/startVirtualThread` so
+  that callers can attach handlers and register the fiber before the thread runs."
+  ^Thread [^Runnable r]
+  (.unstarted ^java.lang.Thread$Builder (Thread/ofVirtual) r))
+
 (deftype ^{:no-doc true} Fiber
     [^VirtualThread virtualThread ^CompletableFuture future]
   clojure.lang.IDeref
@@ -180,7 +186,7 @@
   "Execute body on a loom fiber, returning a deferred that will resolve when the fiber completes."
   [& body]
   `(let [cf#     (CompletableFuture.)
-         thread# (Thread/startVirtualThread
+         thread# (-unstarted-virtual-thread
                    (bound-fn []
                      (when *local-semaphore*
                        (.acquire ^Semaphore *local-semaphore*))
@@ -203,6 +209,7 @@
        (*scope-register!* fiber#))
      (when *local-timeout*
        (timeout! fiber# *local-timeout*))
+     (.start ^Thread thread#)
      fiber#))
 
 (defmacro with-max-parallelism
