@@ -43,16 +43,22 @@
   clojure.lang.IDeref
   (deref [_]
     (try
-      (.get future)
+      (let [result (.get future)]
+        (.join virtualThread)
+        result)
       (catch java.util.concurrent.ExecutionException e
+        (.join virtualThread)
         (throw (.getCause e)))))
   clojure.lang.IBlockingDeref
   (deref [_ time timeout-value]
     (try
-      (.get future time TimeUnit/MILLISECONDS)
+      (let [result (.get future time TimeUnit/MILLISECONDS)]
+        (.join virtualThread)
+        result)
       (catch TimeoutException _
         timeout-value)
       (catch java.util.concurrent.ExecutionException e
+        (.join virtualThread)
         (throw (.getCause e)))))
   clojure.lang.IPending
   (isRealized [_]
