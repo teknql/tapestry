@@ -234,21 +234,76 @@ each fiber will have a timeout that starts from when the fiber was spawned.
 
 ## Experimental Features
 
-Note that you must run your JVM with `--enable-preview` for the following
+> **Note:** The following APIs are experimental and may evolve more rapidly than
+> the stable `tapestry.core` API.
+
+#### Structured Scopes
+
+Scopes provide structured concurrency for tapestry fibers — unifying lifecycle
+management, shutdown policies, timeouts, and parallelism control into a single
+construct.
+
+Any fibers spawned with `tapestry.core/fiber` inside a scope are automatically
+registered. On scope exit, all fibers are awaited (full thread termination, not
+just future completion), and shutdown policies are enforced.
+
+``` clojure
+(require '[tapestry.experimental.scope :refer [with-scope]]
+         '[tapestry.core :refer [fiber]])
+
+;; Basic scope — awaits all fibers before returning
+(with-scope {}
+  (let [a (fiber (fetch-user id))
+        b (fiber (fetch-orders id))]
+    {:user @a :orders @b}))
+
+;; Shutdown on failure — if any fiber throws, siblings are interrupted
+;; and the error propagates from the scope
+(with-scope {:shutdown :on-failure}
+  (let [user   (fiber (fetch-user id))
+        orders (fiber (fetch-orders id))]
+    {:user @user :orders @orders}))
+
+;; Combined options
+(with-scope {:shutdown        :on-failure
+             :timeout         5000
+             :max-parallelism 4}
+  (let [a (fiber (do-a))
+        b (fiber (do-b))]
+    {:a @a :b @b}))
+```
+
+Scopes nest naturally — inner scope fibers are tracked by the inner scope only:
+
+``` clojure
+(with-scope {:shutdown :on-failure}
+  (let [a (fiber
+            (with-scope {:shutdown :on-failure}
+              (let [x (fiber (subtask-1))
+                    y (fiber (subtask-2))]
+                (+ @x @y))))
+        b (fiber (other-work))]
+    {:a @a :b @b}))
+```
 
 #### alts
 
 ``` clojure
 (require '[tapestry.experimental :refer [alts]])
 
-;; Runs all expressions in parallel returning the first successful
-;; result. Will not forward errors from children expressions.
+;; Runs all expressions in parallel, returning the first successful
+;; result. Remaining fibers are interrupted.
 (alts
   (do (Thread/sleep 100)
       :first)
   (do (Thread/sleep 10)
       :second))
 ;; => :second after 10ms
+
+;; With options
+(alts {:timeout 3000}
+  (fetch-from-primary)
+  (fetch-from-replica))
 ```
 
 #### Queues
@@ -289,7 +344,7 @@ Add the following to your `.clj-kondo/config.edn`
 ## Long Term Wish List
 
 - [ ] Consider whether we can drop manifold. What do streams look like?
-- [ ] Implement structured concurrency using either java built-in APIs
+- [x] Implement structured concurrency using either java built-in APIs
       (currently gated) or see if clojure affords us a nicer API.
 - [ ] Consider implement linking ala erlang
 - [ ] Consider implementing an OTP-like interface

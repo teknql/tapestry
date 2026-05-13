@@ -17,6 +17,15 @@
   "A timeout used to coordinate timeout delays"
   nil)
 
+(def ^{:dynamic true :no-doc true} *scope*
+  "The current structured scope, if any. Set by `tapestry.experimental/with-scope`."
+  nil)
+
+(def ^{:dynamic true :no-doc true} *scope-register!*
+  "A function called to register a fiber with the current scope.
+  Set by `tapestry.experimental/with-scope`. Called with a single Fiber argument."
+  nil)
+
 (def ^{:no-doc true} on-error
   "The function that will be called when an error is encountered.
 
@@ -190,6 +199,8 @@
                         (when (or (instance? java.util.concurrent.CancellationException ex#)
                                   (instance? TimeoutException ex#))
                           (interrupt! fiber#)))))
+     (when *scope-register!*
+       (*scope-register!* fiber#))
      (when *local-timeout*
        (timeout! fiber# *local-timeout*))
      fiber#))
