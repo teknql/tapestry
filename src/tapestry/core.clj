@@ -192,6 +192,10 @@
                        (.acquire ^Semaphore *local-semaphore*))
                      (try
                        (.complete cf# (do ~@body))
+                       (catch InterruptedException e#
+                         (when-not (and *scope* (= :on-success (:shutdown-policy *scope*)))
+                           (.completeExceptionally cf# e#)
+                           (throw e#)))
                        (catch Throwable e#
                          (.completeExceptionally cf# e#)
                          (throw e#))
