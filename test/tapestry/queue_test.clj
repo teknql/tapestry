@@ -63,3 +63,20 @@
       (is (= :a (sut/take! q)))
       (is (= :b (sut/take! q)))
       (is (nil? (sut/take! q))))))
+
+(deftest queue--close-race-never-drops-items-test
+  (testing "close! racing with take! never drops items"
+    (dotimes [_ 5000]
+      (let [q     (sut/queue :unbounded)
+            out   (atom [])
+            taker (fiber
+                    (loop []
+                      (when-some [item (sut/take! q)]
+                        (swap! out conj item)
+                        (recur))))]
+        (sut/put! q :a)
+        (sut/close! q)
+        @taker
+        (when-not (= [:a] @out)
+          (throw (ex-info "Property violation" {:out @out})))))
+    (is true)))
