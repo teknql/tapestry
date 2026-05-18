@@ -64,6 +64,38 @@
       (is (= :b (sut/take! q)))
       (is (nil? (sut/take! q))))))
 
+(deftest queue--items-test
+  (testing "items returns a point-in-time snapshot vector"
+    (testing "empty queue"
+      (is (= [] (sut/items (sut/queue 4))))
+      (is (= [] (sut/items (sut/queue :unbounded))))
+      (is (= [] (sut/items (sut/queue)))))
+    (testing "bounded queue with items"
+      (let [q (sut/queue 4)]
+        (sut/put! q :a)
+        (sut/put! q :b)
+        (is (= [:a :b] (sut/items q)))))
+    (testing "unbounded queue with items"
+      (let [q (sut/queue :unbounded)]
+        (sut/put! q 1)
+        (sut/put! q 2)
+        (sut/put! q 3)
+        (is (= [1 2 3] (sut/items q)))))
+    (testing "sync queue with in-flight parcel"
+      (let [q     (sut/queue)
+            _put  (fiber (sut/put! q :only))]
+        (Thread/sleep 10)
+        (is (= [:only] (sut/items q)))
+        (is (= :only (sut/take! q)))
+        (is (= [] (sut/items q)))))
+    (testing "snapshot is decoupled from the live queue"
+      (let [q    (sut/queue 4)
+            _    (sut/put! q :a)
+            snap (sut/items q)]
+        (sut/put! q :b)
+        (is (= [:a] snap))
+        (is (= [:a :b] (sut/items q)))))))
+
 (deftest queue--close-race-never-drops-items-test
   (testing "close! racing with take! never drops items"
     (dotimes [_ 5000]

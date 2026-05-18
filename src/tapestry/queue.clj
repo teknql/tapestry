@@ -252,23 +252,27 @@
   ([^Queue q timeout-ms]             (.tryTakeValue q timeout-ms nil))
   ([^Queue q timeout-ms timeout-val] (.tryTakeValue q timeout-ms timeout-val)))
 
+(defn items
+  "Return a vector containing a point-in-time snapshot of the items currently
+  in `q`. The result is a copy; it does not update as the queue mutates.
+  Intended for inspection and debugging."
+  [^Queue q]
+  (let [lock ^ReentrantLock (.-lock q)
+        d    ^Deque         (.-items q)]
+    (.lock lock)
+    (try
+      ;; In sync mode every entry is a Parcel; in bounded/unbounded mode no
+      ;; entry is a Parcel. Branch once on the mode rather than per-item.
+      (if (.-sync? q)
+        (mapv #(.-item ^Parcel %) (.toArray d))
+        (vec (.toArray d)))
+      (finally (.unlock lock)))))
+
 ;; ---- print-method ----
 
 (defmethod print-method Queue [^Queue q ^java.io.Writer w]
-  (let [lock  ^ReentrantLock     (.-lock q)
-        items ^Deque             (.-items q)
-        cf    ^CompletableFuture (.-closed?* q)
-        sync? (.-sync? q)]
-    (.lock lock)
-    (try
-      (let [snapshot (mapv (fn [x]
-                             (if (instance? Parcel x)
-                               (.-item ^Parcel x)
-                               x))
-                           (.toArray items))]
-        (.write w
-                (str "#queue"
-                     {:capacity (if sync? :sync (.-capacity q))
-                      :items    snapshot
-                      :closed?  (.isDone cf)})))
-      (finally (.unlock lock)))))
+  (.write w
+          (str "#queue"
+               {:capacity (if (.-sync? q) :sync (.-capacity q))
+                :items    (items q)
+                :closed?  (.isDone ^CompletableFuture (.-closed?* q))})))
